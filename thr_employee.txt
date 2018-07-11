@@ -1,0 +1,423 @@
+thr_employee
+
+tco_org
+
+select A.EMP_ID, A.FULL_NAME, B.ORG_NM
+from thr_employee a, tco_org b
+where a.del_if=0 and b.del_if=0 
+and A.TCO_ORG_PK = B.PK
+
+
+
+////////////////////////////////////////
+
+
+CREATE OR REPLACE procedure DEV.st_hr_sel_hrem00200_0 (
+   p_tco_org_pk    varchar,
+   p_team_pk   varchar,
+   p_nation         varchar,
+   p_emp_search     varchar,
+   p_from_joindate  varchar,
+   p_to_joindate    varchar,
+   p_salary_yn      varchar,
+   p_position       varchar,
+   p_pay_type       varchar,
+   p_contract_kind  varchar,
+   p_from_contract  varchar,
+   p_to_contract    varchar,
+   p_sex_yn         varchar,
+   p_insurance_yn   varchar,
+   p_status         varchar,
+   p_from_leftdate  varchar,
+   p_to_leftdate    varchar,
+   p_from_birthdate varchar,
+   p_to_birthdate   varchar,
+   p_ot_yn          varchar,
+   p_union_yn       varchar,
+   p_job            varchar,
+   p_education      varchar,
+   p_rtn_value    out   sys_refcursor
+)
+is
+/******************************************************************************
+   NAME:
+   PURPOSE:
+
+   REVISIONS:
+   VER        DATE        AUTHOR           DESCRIPTION
+   ---------  ----------  ---------------  ------------------------------------
+   1.0        9/25/2007   NGUYEN VAN THAI CO SAI DUNG CHUI      1. CREATED THIS FUNCTION.
+
+******************************************************************************/
+   l_rtn_cur   sys_refcursor;
+   l_version varchar2(1);
+begin
+
+--CHECK VERION FOR PL
+    select nvl(v.char_2,'1') into l_version from vhr_hr_code v where v.id='HR0211' and v.code='01';
+
+     if l_version='1' then
+            open p_rtn_value for
+                select
+                a.pk,
+                 b.org_nm as org_nm,
+                c.workgroup_nm as team,
+                a.emp_id,
+                a.old_id,
+                a.full_name,
+                a.id_num,
+                a.join_dt,
+                decode(length(birth_dt),4,birth_dt,to_char(to_date(birth_dt,'YYYYMMDD'),'DD/MM/YYYY')),
+                place_birth,
+                tel,
+                permanent_addr,
+                present_addr,
+                sex,
+                person_id,
+                issue_dt,
+                place_per_id,
+                decode(married_yn,'Y',-1,0),
+                nation,
+                ethnic_type,
+                relig_type,
+                edu_type,
+                job_type,
+                pos_type,
+                prob_type.code_nm,
+                begin_probation,--TO_CHAR(TO_DATE(BEGIN_PROBATION,'YYYYMMDD'),'DD/MM/YYYY'),
+                end_probation,--TO_CHAR(TO_DATE(END_PROBATION,'YYYYMMDD'),'DD/MM/YYYY'),
+                contract_type.code_nm,
+                contract_no,
+                begin_contract,--TO_CHAR(TO_DATE(BEGIN_CONTRACT,'YYYYMMDD'),'DD/MM/YYYY'),
+                end_contract,--TO_CHAR(TO_DATE(END_CONTRACT,'YYYYMMDD'),'DD/MM/YYYY'),
+                decode(social_yn,'Y',-1,0),
+                a.social_no,
+                 a.social_place ,
+                 decode (a.social_dt,null,null,a.social_dt||'01') ,
+                decode(health_yn,'Y',-1,0),
+                a.health_no ,
+                a.health_place ,
+                decode (a.health_dt,null,null,a.health_dt||'01'), --35 
+                decode(nvl(unemp_yn,'N'),'Y',-1,0), -- 36
+                decode (a.unemp_dt,null,null,a.unemp_dt||'01'), --37 
+                employee_type,
+                decode(ot_yn,'Y',-1,0),
+                decode(salary_yn,'Y',-1,0),
+                pro_sal,
+                basic_sal,
+                allow_amt1,
+                allow_amt2,
+                allow_amt3,
+                allow_amt4,
+                allow_amt5,
+                allow_amt6,
+                allow_amt7,
+                allow_amt8,
+                pay_type,
+                bank_type,
+                bank_branch,
+                account,
+                status.code_nm,
+                to_char(to_date(left_dt,'YYYYMMDD'),'DD/MM/YYYY'),
+                resign_type.code_nm,
+                a.cost_group,
+                a.cost_kind,
+                (select pl.pl_nm from tac_abpl pl where pl.del_if=0 and pl.pk=a.tac_abpl_pk),
+                pass_port_no,
+                pass_port_dt,
+                a.remark,
+                decode(nvl(a.union_yn,'N'),'Y',-1,0),
+                a.union_date,
+                a.pit_tax_no,
+                a.id_byhand_yn,
+                a.tac_abpl_pk,
+                decode(nvl(a.house_yn,'N'),'Y',-1,0),
+                decode(nvl(a.meal_yn,'N'),'Y',-1,0),
+                b.pk,a.sal_period, decode(nvl(a.reg_ins_yn,'N'),'N',0,-1),a.n_country2
+             from thr_employee a,tco_org b,thr_work_group c
+             ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id='HR0002' ) prob_type
+             ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id='HR0001' ) contract_type
+             ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id ='HR0013') social_place
+             ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.del_if = 0 and b.id ='HR0012') health_place
+             ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id ='HR0022') status
+             ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id ='HR0004') resign_type
+             where a.del_if=0 and b.del_if=0 and c.del_if=0 and a.tco_org_pk=b.pk and a.thr_wg_pk=c.pk
+             and a.prob_type= prob_type.code(+)
+             and a.contract_type =contract_type.code(+)
+             and a.social_place= social_place.code(+)
+             and a.health_place=health_place.code(+)
+             and a.status=status.code(+)
+             and a.resign_type=resign_type.code(+)
+             and decode(p_team_pk,'ALL','ALL',c.pk)=p_team_pk
+             and decode(p_nation,'ALL','ALL',a.nation )=p_nation
+             and (p_emp_search is null 
+                 or  (upper(a.emp_id) like  '%' || upper(p_emp_search)|| '%')
+                 or  (upper(a.old_id ) like  '%' || upper(p_emp_search)|| '%')
+                 or  (upper(a.full_name) like  '%' || upper(p_emp_search)|| '%'))
+             and ((p_from_joindate is null and p_to_joindate is null)
+                 or (a.join_dt between p_from_joindate and p_to_joindate) )
+             and decode(p_salary_yn,'ALL','ALL',a.salary_yn )=p_salary_yn
+             and decode(p_position,'ALL','ALL',a.pos_type )=p_position
+             and decode(p_pay_type,'ALL','ALL',a.pay_type )=p_pay_type
+             and decode(p_contract_kind,'ALL','ALL',a.contract_type )=p_contract_kind
+             and ((p_from_contract is null and p_to_contract is null)
+                 or (a.begin_contract between p_from_contract and p_to_contract) )
+             and decode(p_sex_yn,'ALL','ALL',a.sex )=p_sex_yn
+             and decode(p_insurance_yn,'ALL','ALL',a.social_yn )=p_insurance_yn
+             and decode(p_status,'ALL','ALL',a.status)=p_status
+             and ((p_from_leftdate is null and p_to_leftdate is null)
+                 or (a.left_dt between p_from_leftdate and p_to_leftdate) )
+              and ((p_from_birthdate is null and p_to_birthdate is null)
+                 or (decode(length(a.birth_dt),4,a.birth_dt || '0101',a.birth_dt) between p_from_birthdate and p_to_birthdate) )
+             and decode(p_ot_yn,'ALL','ALL',a.ot_yn)=p_ot_yn
+              and (   a.tco_org_pk in (
+                                      select     g.pk
+                                            from tco_org g
+                                           where g.del_if = 0
+                                             --AND NVL (G.CHILD_YN, 'Y') = 'N'
+                                      start with g.pk =
+                                                    decode (p_tco_org_pk,
+                                                            'ALL', 0,
+                                                            p_tco_org_pk
+                                                           )
+                                      connect by prior g.pk = g.p_pk)
+                                or p_tco_org_pk = 'ALL')
+              and decode(p_union_yn,'ALL',p_union_yn,a.union_yn)=p_union_yn
+              and decode(p_job,'ALL',p_job,a.job_type)=p_job
+              and decode(p_education,'ALL',p_education,a.edu_type)=p_education
+              order by nvl(b.seq,0),org_nm,team,a.emp_id;
+
+    else
+
+        open p_rtn_value for
+        select
+        a.pk,
+         b.org_nm as org_nm,
+        c.workgroup_nm as team,
+        a.emp_id,
+        a.old_id,
+        a.full_name,
+        a.id_num,
+        a.join_dt,
+        decode(length(birth_dt),4,birth_dt,to_char(to_date(birth_dt,'YYYYMMDD'),'DD/MM/YYYY')),
+        place_birth,
+        tel,
+        permanent_addr,
+        present_addr,
+        sex,
+        person_id,
+        issue_dt,
+        place_per_id,
+        decode(married_yn,'Y',-1,0),
+        nation,
+        ethnic_type,
+        relig_type,
+        edu_type,
+        job_type,
+        pos_type,
+        prob_type.code_nm,
+        begin_probation,--TO_CHAR(TO_DATE(BEGIN_PROBATION,'YYYYMMDD'),'DD/MM/YYYY'),
+        end_probation,--TO_CHAR(TO_DATE(END_PROBATION,'YYYYMMDD'),'DD/MM/YYYY'),
+        contract_type.code_nm,
+        contract_no,
+        begin_contract,--TO_CHAR(TO_DATE(BEGIN_CONTRACT,'YYYYMMDD'),'DD/MM/YYYY'),
+        end_contract,--TO_CHAR(TO_DATE(END_CONTRACT,'YYYYMMDD'),'DD/MM/YYYY'),
+        decode(social_yn,'Y',-1,0),
+        a.social_no,
+         a.social_place ,
+         decode (a.social_dt,null,null,a.social_dt||'01') ,
+        decode(health_yn,'Y',-1,0),
+        a.health_no ,
+        a.health_place ,
+        decode (a.health_dt,null,null,a.health_dt||'01'), --35 
+        decode(nvl(unemp_yn,'N'),'Y',-1,0), -- 36
+        decode (a.unemp_dt,null,null,a.unemp_dt||'01'), --37 
+        employee_type,
+        decode(ot_yn,'Y',-1,0),
+        decode(salary_yn,'Y',-1,0),
+        pro_sal,
+        basic_sal,
+        allow_amt1,
+        allow_amt2,
+        allow_amt3,
+        allow_amt4,
+        allow_amt5,
+        allow_amt6,
+        allow_amt7,
+        allow_amt8,
+        pay_type,
+        bank_type,
+        bank_branch,
+        account,
+        status.code_nm,
+        to_char(to_date(left_dt,'YYYYMMDD'),'DD/MM/YYYY'),
+        resign_type.code_nm,
+        a.cost_group,
+        a.cost_kind
+        ,(select d.pl_nm||' - '||b.plc_nm as pl_nm
+                         from tac_abpl d, tac_abplcenter e, tac_abcenter b
+                        where d.del_if    = 0
+                          and e.del_if    = 0
+                          and e.tac_abpl_pk = d.pk
+                          and e.tac_abcenter_pk = b.pk
+                          and e.pk=a.tac_abpl_pk
+                          ) pl
+        ,pass_port_no,
+        pass_port_dt,
+        a.remark,
+        decode(nvl(a.union_yn,'N'),'Y',-1,0),
+        a.union_date,
+        a.pit_tax_no,
+        a.id_byhand_yn,
+        a.tac_abpl_pk,
+        decode(nvl(a.house_yn,'N'),'Y',-1,0),
+        decode(nvl(a.meal_yn,'N'),'Y',-1,0),
+        b.pk,a.sal_period, decode(nvl(a.reg_ins_yn,'N'),'N',0,-1),a.n_country2
+     from thr_employee a,tco_org b,thr_work_group c
+     ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id='HR0002' ) prob_type
+     ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id='HR0001' ) contract_type
+     ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id ='HR0013') social_place
+     ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.del_if = 0 and b.id ='HR0012') health_place
+     ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id ='HR0022') status
+     ,(select a.code,a.code_nm from thr_code_detail a, thr_code_master b where a.del_if=0 and b.del_if=0 and a.thr_code_master_pk=b.pk and b.id ='HR0004') resign_type
+     where a.del_if=0 and b.del_if=0 and c.del_if=0 and a.tco_org_pk=b.pk and a.thr_wg_pk=c.pk
+     and a.prob_type= prob_type.code(+)
+     and a.contract_type =contract_type.code(+)
+     and a.social_place= social_place.code(+)
+     and a.health_place=health_place.code(+)
+     and a.status=status.code(+)
+     and a.resign_type=resign_type.code(+)
+     and decode(p_team_pk,'ALL','ALL',c.pk)=p_team_pk
+     and decode(p_nation,'ALL','ALL',a.nation )=p_nation
+     and (p_emp_search is null 
+                 or  (upper(a.emp_id) like  '%' || upper(p_emp_search)|| '%')
+                 or  (upper(a.old_id ) like  '%' || upper(p_emp_search)|| '%')
+                 or  (upper(a.full_name) like  '%' || upper(p_emp_search)|| '%'))
+     and ((p_from_joindate is null and p_to_joindate is null)
+         or (a.join_dt between p_from_joindate and p_to_joindate) )
+     and decode(p_salary_yn,'ALL','ALL',a.salary_yn )=p_salary_yn
+     and decode(p_position,'ALL','ALL',a.pos_type )=p_position
+     and decode(p_pay_type,'ALL','ALL',a.pay_type )=p_pay_type
+     and decode(p_contract_kind,'ALL','ALL',a.contract_type )=p_contract_kind
+     and ((p_from_contract is null and p_to_contract is null)
+         or (a.begin_contract between p_from_contract and p_to_contract) )
+     and decode(p_sex_yn,'ALL','ALL',a.sex )=p_sex_yn
+     and decode(p_insurance_yn,'ALL','ALL',a.social_yn )=p_insurance_yn
+     and decode(p_status,'ALL','ALL',a.status)=p_status
+     and ((p_from_leftdate is null and p_to_leftdate is null)
+         or (a.left_dt between p_from_leftdate and p_to_leftdate) )
+      and ((p_from_birthdate is null and p_to_birthdate is null)
+         or (decode(length(a.birth_dt),4,a.birth_dt || '0101',a.birth_dt) between p_from_birthdate and p_to_birthdate) )
+     and decode(p_ot_yn,'ALL','ALL',a.ot_yn)=p_ot_yn
+      and (   a.tco_org_pk in (
+                              select     g.pk
+                                    from tco_org g
+                                   where g.del_if = 0
+                                     --AND NVL (G.CHILD_YN, 'Y') = 'N'
+                              start with g.pk =
+                                            decode (p_tco_org_pk,
+                                                    'ALL', 0,
+                                                    p_tco_org_pk
+                                                   )
+                              connect by prior g.pk = g.p_pk)
+                        or p_tco_org_pk = 'ALL')
+      and decode(p_union_yn,'ALL',p_union_yn,a.union_yn)=p_union_yn
+      and decode(p_job,'ALL',p_job,a.job_type)=p_job
+      and decode(p_education,'ALL',p_education,a.edu_type)=p_education
+      order by nvl(b.seq,0),org_nm,team,a.emp_id;
+      
+      end if;
+
+   /**/
+
+exception
+   when others
+   then
+      raise;
+end;
+/
+
+
+
+
+////////////////////////////////////////////////////////////////
+
+
+
+
+CREATE OR REPLACE procedure DEV.st_hr_sel_hrem01600_0 (
+   p_tco_org_pk    varchar,
+   p_emp_search     varchar, 
+   p_nation         varchar,
+   p_position       varchar,
+   p_job            varchar,
+   p_status         varchar,
+   p_rtn_value    out   sys_refcursor
+)
+is
+/******************************************************************************
+   NAME:
+   PURPOSE:
+
+   REVISIONS:
+   VER        DATE        AUTHOR           DESCRIPTION
+   ---------  ----------  ---------------  ------------------------------------
+   1.0        9/25/2007   NGUYEN VAN THAI CO SAI DUNG CHUI      1. CREATED THIS FUNCTION.
+
+******************************************************************************/
+   l_rtn_cur   sys_refcursor;
+   l_version varchar2(1);
+begin
+
+
+            open p_rtn_value for
+               
+              
+                     select a.EMP_ID, A.FULL_NAME,D.ORG_NM
+                        ,(select v.code_nm from vhr_hr_code v where v.id='HR0008' and v.code = a.pos_type) pos_name
+                        ,(select v.code_nm from vhr_hr_code v where v.id='HR0010' and v.code = a.job_type) job_name
+                        ,(select v.code_nm from vhr_hr_code v where v.id='HR0009' and v.code = a.nation) nation
+                        ,(select v.code_nm from vhr_hr_code v where v.id='HR0022' and v.code = A.STATUS ) status
+                    from THR_EMPLOYEE A,TCO_ORG D
+                    where a.del_if=0 and D.DEL_IF=0 and A.TCO_ORG_PK=D.PK
+                        and decode(p_nation,'ALL','ALL',a.nation )=p_nation
+                        and (p_emp_search is null 
+                            or  (upper(a.emp_id) like  '%' || upper(p_emp_search)|| '%')
+                            or  (upper(a.old_id ) like  '%' || upper(p_emp_search)|| '%')
+                            or  (upper(a.full_name) like  '%' || upper(p_emp_search)|| '%'))
+                        and (   a.tco_org_pk in (
+                                          select     g.pk
+                                                from tco_org g
+                                               where g.del_if = 0
+                                                 --AND NVL (G.CHILD_YN, 'Y') = 'N'
+                                          start with g.pk =
+                                                        decode (p_tco_org_pk,
+                                                                'ALL', 0,
+                                                                p_tco_org_pk
+                                                               )
+                                          connect by prior g.pk = g.p_pk)
+                                or p_tco_org_pk = 'ALL')
+                   ;                
+                    
+
+exception
+   when others
+   then
+      raise;
+end;
+/
+
+
+
+//////////////////////////////////////
+
+
+
+select decode('1', '1','true','1','three', 'false') from dual
+
+select case when '2' = '1' then 'true'
+            else 'false' end from dual
+
+
+
+            ////////////////////////////////////
