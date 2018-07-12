@@ -1,0 +1,41 @@
+/* Formatted on 7/12/2018 3:44:25 PM (QP5 v5.256.13226.35538) */
+CREATE OR REPLACE PROCEDURE DEV.ST_HR_UPD_HREM01600_0 (
+   P_ACTION            VARCHAR,     
+   pk               varchar,                                        --
+   p_nation         varchar,
+   p_position       varchar,
+   p_job            varchar,
+   p_status         varchar,                                   --4
+   P_CRT_BY            VARCHAR)
+IS
+   
+BEGIN
+   IF p_action = 'INSERT'
+   THEN
+      INSERT INTO THR_EMPLOYEE (NATION, POS_TYPE,JOB_TYPE,STATUS )
+          VALUE(
+          
+                   (select V.CODE from vhr_hr_code v where v.code_nm=p_nation),
+                   (select V.CODE from vhr_hr_code v where v.code_nm=p_position), 
+                   (select V.CODE from vhr_hr_code v where v.code_nm=p_job) ,
+                   (select V.CODE from vhr_hr_code v where v.code_nm=p_status) 
+          
+          )
+          
+   ELSEIF p_action = 'UPDATE'
+   THEN
+      UPDATE THR_EMPLOYEE A
+         SET A.NATION = (select V.CODE from vhr_hr_code v where v.code_nm=p_nation),
+             A.POS_TYPE = (select V.CODE from vhr_hr_code v where v.code_nm=p_position),
+             A.JOB_TYPE = (select V.CODE from vhr_hr_code v where v.code_nm=p_job) ,
+             A.STATUS = (select V.CODE from vhr_hr_code v where v.code_nm=p_status)
+            
+       WHERE A.del_if = 0 AND pk=A.PK;
+   
+   END IF;
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      RAISE_APPLICATION_ERROR (-20000, 'Trùng ID');
+END;
+/
