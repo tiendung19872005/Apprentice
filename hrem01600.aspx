@@ -1,16 +1,27 @@
-﻿<!-- #include file="../../../../system/lib/form.inc"  -->
+<!-- #include file="../../../../system/lib/form.inc"  -->
  <%  CtlLib.SetUser(Session("APP_DBUSER"))%>
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head id="Head1" runat="server">
     <title>Untitled Page</title>
 </head>
 <script>
-
+//_PK|Emp ID|Full Name|Organization|Position|Job|Nation|Status|Join Date|Left Date
+var  G_PK=0,
+	 G_EMP_ID=1,
+	 G_FULL_NM=2,
+	 G_ORG=3,
+	 G_POS=4,
+	 G_JOB=5,
+	 G_NATION=6,
+	 G_STATUS=7,
+	 G_JION_DT=8,
+	 G_LEFT_DT=9;
 var check_init = 0;
-
+// var p_Nation= 18;
 function BodyInit()
 {
-    
+    // khi load mot trang web, no xe load  BodyInit(), khong can goi
+
     //if (v_language!="ENG")
     System.Translate(document);
    
@@ -21,6 +32,8 @@ function BodyInit()
     txtLanguage.text = v_language;
     //menu_id.text=System.Menu.GetMenuID();
 	
+	//  dua du lieu len cac components bang cach truy xuat du lieu duoi data base
+
 	data = "<%=CtlLib.SetListDataFUNC("SELECT ST_HR_GET_HRCODE('HR0022', '" + Session("SESSION_LANG").ToString() + "') FROM DUAL" )%>";    
 	lstStatus.SetDataText(data);
 	lstStatus.value ="A";
@@ -40,6 +53,20 @@ function BodyInit()
 	data = "<%=CtlLib.SetListDataFUNC("SELECT ST_HR_GET_LIST('ORG', '" + Session("SESSION_LANG").ToString() + "') FROM DUAL" )%>";
 	lstOrg_Code.SetDataText(data);
 	lstOrg_Code.value ="ALL";
+//------------------------------------------------------------------------
+	data = "<%=CtlLib.SetGridColumnDataSQL("select code,CODE_NM from vhr_hr_code where id='HR0009' order by code_nm")%>";
+       grdEmployee.SetComboFormat(G_NATION,data);
+
+    data = "<%=CtlLib.SetGridColumnDataSQL("select code,CODE_NM from vhr_hr_code where id='HR0022' order by code_nm")%>";
+       grdEmployee.SetComboFormat(G_STATUS,data);
+
+    data = "<%=CtlLib.SetGridColumnDataSQL("select code,CODE_NM from vhr_hr_code where id='HR0010' order by code_nm")%>";
+       grdEmployee.SetComboFormat(G_JOB,data);
+
+    data = "<%=CtlLib.SetGridColumnDataSQL("select code,CODE_NM from vhr_hr_code where id='HR0008' order by code_nm")%>";
+       grdEmployee.SetComboFormat(G_POS,data);
+
+   
     
 }
 
@@ -47,29 +74,39 @@ function BodyInit()
 //----------------------------------------------------
 function OnSearch()
 {
-      dat_hrem01600_0.Call("SELECT");
+   	dat_hrem01600_0.Call("SELECT");
 }
 
+function OnSave()
+{
 
+	dat_Save_hrem01600_0.Call("UPDATE");
+	
+}
 //-------------------------------------------------------------------------------------
 function OnDataReceive(obj)
 {
+	if(obj.id == "dat_hrem01600_0") //obj.id ==  id cua <dso>
+	{
+		
+		lblRecord.text = grdEmployee.rows - 1;// grid.rows tra ve so dong cua grid + dong heading
 
+	}
+
+//<gw:label id="lblRecord"  text="" />
 }
 
-function onChange_org()
-{
-	
-}
-// ------------------------------------------------------------------------------
 
+
+//----------------------------------------------------------------------------------
 </script>
 
 <body bgcolor='#FFFFFF' style="overflow-y:hidden;">
-
+        	<!-- KHong command trong dso ;st_hr_sel_hrem01600_0 ten cua procedure trong csdl, cac doi tuong truyen vao procedure la <input bind _id/> grid hung du lieu <output bind = grid_id -->
 <gw:data id="dat_hrem01600_0" onreceive="OnDataReceive(this)" > 
         <xml> 
-            <dso  type="grid" function="st_hr_sel_hrem01600_0"> 
+        	
+            <dso  type="grid" parameter ="0,1,2,3,4,5,6,7,8,9" function="st_hr_sel_hrem01600_0" PROCEDURE="st_hr_upd_hrem01600_0"> 
                     <input bind="grdEmployee" >
 	                    <input bind="lstOrg_Code" />
 	                    <input bind="txtEmployee" />
@@ -77,12 +114,19 @@ function onChange_org()
 	                    <input bind="lstPosition" />
 	                    <input bind="lstJob" />
 	                    <input bind="lstStatus" />
+	                    <input bind="dtFrom_JoinDate" />
+	                    <input bind="dtTo_JoinDate" />
+	                    <input bind="dtFrom_LeftDate" />
+	                    <input bind="dtTo_LeftDate" />
 	                </input>
 	                <output  bind="grdEmployee" />
                 
             </dso> 
         </xml> 
 </gw:data>
+	
+
+
 
 <!-- data control -->
 
@@ -157,6 +201,7 @@ function onChange_org()
 								~
 								<gw:datebox id="dtTo_LeftDate" nullaccept styles="width:100%" lang="<%=Session("Lang")%>" />
 							</td>
+
 						</tr>
 					</table>
 				</div>
@@ -192,14 +237,15 @@ function onChange_org()
 					<table  cellspacing=0 cellpadding=0 style="height:100%" width=100% border=1>
 						<tr valign="top">
 							<td  style="width:100%;height:100%;"> 
+								<!-- grid: _an; format:0-text,2-listbox,3-checkbox,4-datebox,5-datebox(month+year); editcol:0,1 -->
 								<gw:grid   
                                 id="grdEmployee"  
-                                header="Emp ID|FullNamee|Organization|Position|Job|Nation|Status|Join Date|Left Date"   
-                                format="0|0|0|0|0|0|0|4|4"  
-                                aligns="0|0|0|0|0|0|0|0|0"    
-                                defaults="||||||||"    
-                                editcol="0|0|1|1|0|1|0|0|1"  
-                                widths="1500|2500|1500|1500|2500|1500|1500|1500|1500"  
+                                header="_PK|Emp ID|Full Name|Organization|Position|Job|Nation|Status|Join Date|Left Date"   
+                                format="0|0|0|0|0|0|0|0|4|4"  
+                                aligns="0|0|0|0|0|0|0|0|0|0"    
+                                defaults="|||||||||"    
+                                editcol="0|0|0|1|1|0|1|0|0|1"  
+                                widths="1500|1500|3500|1500|1500|2500|1500|1500|1500|1500"  
                                 styles="width:100%; height:100%"   acceptNullDate
                                 onafteredit="On_AfterEdit()"
                                 onentercell = "On_click()"
